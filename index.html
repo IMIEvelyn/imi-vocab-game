@@ -993,10 +993,10 @@ body {
       starContainer.appendChild(starEl);
     }
     
-   document.getElementById('finalStarText').innerText = `一共有 ${starCount} 顆星星！`;
+   document.getElementById('finalStarText').innerText = `一共有 ${stars} 顆星星！`;
 
-    // 💐 修正版：滿分專屬尊榮花束
-    if (starCount > 0 && starCount === validWords.length) {
+    // 💐 滿分專屬尊榮花束 (終極修正版：強制數字化比對)
+    if (Number(stars) === Number(validWords.length) && Number(validWords.length) > 0) {
       setTimeout(() => {
         const flower = document.createElement('div');
         flower.innerText = '💐';
