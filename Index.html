@@ -981,11 +981,15 @@ body {
     
     const starContainer = document.getElementById('finalStarsContainer');
     starContainer.innerHTML = '';
-    for(let i=0; i<stars; i++) {
+    for(let i=0; i<validWords.length; i++) {
       const starEl = document.createElement('span');
       starEl.className = 'final-star-item';
       starEl.innerText = '⭐';
       starEl.style.animationDelay = `${i * 0.15}s`;
+      if (i >= stars) {
+        starEl.style.setProperty('opacity', '0.3', 'important');
+        starEl.style.setProperty('filter', 'grayscale(100%) drop-shadow(0 0 0 transparent)', 'important');
+      }
       starContainer.appendChild(starEl);
     }
     
@@ -995,7 +999,7 @@ body {
   }
   
   function restartGame() { document.getElementById('winModal').style.display = 'none'; document.getElementById('starBtn').style.opacity = '1'; document.getElementById('btnPy').style.opacity = '1'; document.getElementById('btnZy').style.opacity = '1'; parseAndStart(originalVocabString); }
-  function updateStarUI() { document.getElementById('starCount').innerText = stars; }
+  function updateStarUI() { document.getElementById('starCount').innerText = stars + " / " + validWords.length; }
   
   // 💡 絕對安全的計時器重置函數
   function resetIdleTimer() { 
