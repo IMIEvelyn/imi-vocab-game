@@ -478,9 +478,9 @@ body {
 
 
 <script>
-  const SCRIPT_URL = "<?!= scriptUrl ?>";
-  const URL_DATA = "<?!= urlData ?>";
-  let originalVocabString = ""; 
+    const SCRIPT_URL = window.location.origin + window.location.pathname;
+    const URL_DATA = new URLSearchParams(window.location.search).get('data') || "";
+     let originalVocabString = ""; 
   
   window.onload = function() {
     document.getElementById('inputDate').valueAsDate = new Date();
