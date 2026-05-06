@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMI 華語老師的教材坊 - 詞彙消消樂</title>
+
+<style id="gameStyles">
+body {
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    min-height: 100vh; 
+    margin: 0; font-family: 'PingFang TC', 'Rounded Mplus 1c', sans-serif;
+    color: #444; overflow-x: hidden; padding-top: 20px;
+    
+    /* 👇 這次保證是真正的轉換網址！ */
+    background-image: url('https://lh3.googleusercontent.com/d/1lOcPtHdy8U-V1ZHCtvRtsgJhXSQTFnYW');
+    background-size: cover;          
+    background-position: center;     
+    background-attachment: fixed;    
+    background-repeat: no-repeat;    
+  }
+  
+  #gameContainer {
+    width: 100vw; display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start; position: relative; padding-bottom: 40px;
+    transition: transform 0.3s ease; display: none; 
+  }
+
+  /* 學生名牌與頂部狀態列 */
+  .student-header { width: 850px; box-sizing: border-box; background: rgba(255, 255, 255, 0.85); padding: 15px 40px; border-radius: 25px; box-shadow: 0 8px 20px rgba(0,0,0,0.03); margin-bottom: 20px; text-align: center; border: 2px solid #fff; }
+  .course-title { font-size: 32px; font-weight: bold; color: #333; margin: 0 0 10px 0; }
+  .course-info { display: flex; gap: 15px; justify-content: center; flex-wrap: nowrap; white-space: nowrap; }
+  .info-tag { background: #f4f6f9; padding: 6px 15px; border-radius: 15px; font-size: 16px; color: #555; font-weight: bold; border: 1px solid #e0e6ed; white-space: nowrap; }
+  
+  .top-bar { display: flex; justify-content: space-between; align-items: center; width: 850px; margin-bottom: 20px; position: relative; z-index: 1000; }
+  .scaffold-controls { display: flex; gap: 15px; }
+  .toggle-btn { background: white; border: 2px solid #b6d4fe; padding: 8px 20px; border-radius: 20px; font-size: 18px; font-weight: bold; color: #555; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: all 0.2s; white-space: nowrap; }
+  .toggle-btn:active { transform: scale(0.95); }
+  .toggle-btn.off { background: #f0f0f0; border-color: #ddd; color: #999; }
+  
+  /* =========================================
+     🌟 星星系統與向量手指引導動畫
+     ========================================= */
+  .star-panel { display: flex; align-items: center; gap: 10px; background: white; padding: 10px 25px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; border: 3px solid transparent; transition: all 0.3s; position: relative; }
+  .star-panel:active { transform: scale(0.95); }
+  .star-icon { font-size: 36px; line-height: 1; }
+  .star-count { font-size: 32px; font-weight: bold; color: #ffca28; }
+  @keyframes star-pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 202, 40, 0.7); transform: scale(1); border-color: #ffca28; background: #fffdf4;} 70% { box-shadow: 0 0 0 15px rgba(255, 202, 40, 0); transform: scale(1.05); border-color: #ffca28; background: #fffdf4;} 100% { box-shadow: 0 0 0 0 rgba(255, 202, 40, 0); transform: scale(1); border-color: #ffca28; background: #fffdf4;} }
+  .star-ready { animation: star-pulse 1.5s infinite; }
+  
+  /* 🎯 SVG 向量手指設定 (預設隱藏，觸發提示時出現) */
+  .finger-guide {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    bottom: -50px;
+    left: 50%;
+    margin-left: -35px;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 50;
+    transition: opacity 0.3s ease;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+  }
+  
+  /* 系統觸發提示時，顯示手指並上下浮動點擊 */
+  .star-panel.star-ready .finger-guide {
+    opacity: 1;
+    animation: finger-bounce 0.6s infinite alternate cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  @keyframes finger-bounce {
+    from { transform: translateY(0px); }
+    to { transform: translateY(-10px); }
+  }
+  
+  /* 跑馬燈區塊 */
+  .marquee-box { width: 850px; height: 65px; background: rgba(255,255,255,0.9); border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; overflow: hidden; display: flex; align-items: center; border: 2px solid #fff; }
+  .marquee-inner { display: inline-flex; white-space: nowrap; width: max-content; transform: translateZ(0); will-change: transform; }
+  @keyframes marquee-anim { 0% { transform: translateX(0) translateZ(0); } 100% { transform: translateX(-50%) translateZ(0); } }
+  .marquee-item { margin: 0 30px; font-weight: bold; color: #666; font-size: 26px; letter-spacing: 2px; }
+  .marquee-item span { color: #4CAF50; font-size: 20px; margin-left: 8px; }
+
+  /* 大星星回饋層 */
+  #bigStarFeedback { 
+    position: fixed; top: 50%; left: 50%; 
+    transform: translate(-50%, -50%) scale(0); 
+    z-index: 10005; pointer-events: none; opacity: 0; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+  }
+  #bigStarFeedback.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  
+  .star-bg { font-size: 220px; filter: drop-shadow(0 0 40px rgba(255, 202, 40, 0.8)); position: absolute; z-index: 1; }
+  .star-text-box { z-index: 2; text-align: center; }
+  .star-text-zh { font-size: 45px; font-weight: bold; color: #FFF; text-shadow: 0 3px 10px rgba(0,0,0,0.6), 0 0 5px rgba(0,0,0,0.8); letter-spacing: 2px; line-height: 1.2; }
+  .star-text-en { font-size: 22px; font-weight: bold; color: #FFFDE7; text-shadow: 0 2px 8px rgba(0,0,0,0.8); margin-top: 5px; }
+
+  /* 系統提示框樣式 */
+  .system-toast { 
+    position: fixed; 
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%) scale(0.8); 
+    background: rgba(33, 150, 243, 0.95); color: white; padding: 20px 45px; 
+    border-radius: 40px; font-size: 26px; font-weight: bold; 
+    z-index: 10006; opacity: 0; pointer-events: none; 
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+    white-space: pre-wrap; 
+    text-align: center; line-height: 1.4;
+  }
+  .system-toast.show { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
+  .system-toast.error { background: rgba(244, 67, 54, 0.95); }
+
+  /* 遊戲主區域與包裹層 */
+  #boardWrapper { position: relative; width: 800px; height: 600px; display: flex; justify-content: center; }
+  #stackedBoard { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; }
+  
+  .tile-wrapper { position: absolute; width: 170px; height: 196px; cursor: pointer; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s; }
+  @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px) scale(0.8); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .fade-in { animation: fade-in-up 0.5s ease-out forwards; }
+  @keyframes hint-bounce { 0%, 100% { transform: translateY(0); filter: drop-shadow(0 12px 0 var(--base-shadow)) drop-shadow(0 0 15px rgba(255,255,255,0.8)) brightness(1.1); } 50% { transform: translateY(-15px); filter: drop-shadow(0 20px 0 var(--base-shadow)) drop-shadow(0 0 25px rgba(255,255,255,1)) brightness(1.2); } }
+  
+  .hint-glow { animation: hint-bounce 1.2s infinite !important; z-index: 100 !important; }
+  
+  .tile { width: 100%; height: 100%; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; position: relative; }
+
+  .tone-1-wrap { filter: drop-shadow(0 12px 0 #85A9C9) drop-shadow(0 10px 10px rgba(0,0,0,0.08)); --base-shadow: #85A9C9; } .tone-1 { background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, #A7C7E7 15%, #A7C7E7 100%); }
+  .tone-2-wrap { filter: drop-shadow(0 12px 0 #85C2AA) drop-shadow(0 10px 10px rgba(0,0,0,0.08)); --base-shadow: #85C2AA; } .tone-2 { background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, #A8E6CF 15%, #A8E6CF 100%); }
+  .tone-3-wrap { filter: drop-shadow(0 12px 0 #AE9CCF) drop-shadow(0 10px 10px rgba(0,0,0,0.08)); --base-shadow: #AE9CCF; } .tone-3 { background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, #D4C4FB 15%, #D4C4FB 100%); }
+  .tone-4-wrap { filter: drop-shadow(0 12px 0 #D9A98C) drop-shadow(0 10px 10px rgba(0,0,0,0.08)); --base-shadow: #D9A98C; } .tone-4 { background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, #FFD3B6 15%, #FFD3B6 100%); }
+  .tone-5-wrap { filter: drop-shadow(0 12px 0 #D48681) drop-shadow(0 10px 10px rgba(0,0,0,0.08)); --base-shadow: #D48681; } .tone-5 { background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, #FFAAA5 15%, #FFAAA5 100%); }
+  
+  .tile-wrapper.selected { transform: translateY(12px) !important; }
+  .tile-wrapper.selected .tile { background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, #fff7e1 15%, #fff7e1 100%); }
+  .tile-wrapper.selected.tone-1-wrap, .tile-wrapper.selected.tone-2-wrap, .tile-wrapper.selected.tone-3-wrap, .tile-wrapper.selected.tone-4-wrap, .tile-wrapper.selected.tone-5-wrap { filter: drop-shadow(0 0px 0 #ffda6a) drop-shadow(0 5px 5px rgba(0,0,0,0.1)); }
+  .tile-wrapper.matched { transform: translateY(-30px) scale(0.8) !important; opacity: 0; visibility: hidden; pointer-events: none; }
+
+  /* =======================================================================
+     🎯 完美注音排版系統 (右注音、下拼音、輕聲完美下探)
+     ======================================================================= */
+  .greet-char-block { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 0 5px; 
+  }
+
+  .greet-hanzi-box { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    position: relative; 
+  }
+
+  /* 電腦版積木：中文 64px */
+  .greet-hz { 
+    font-size: 64px; 
+    font-weight: bold; 
+    color: #333; 
+    line-height: 1; 
+    margin-right: 28px; 
+    text-shadow: 0 2px 4px rgba(255,255,255,0.8); 
+  }
+
+  .greet-zhuyin-box { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    position: absolute; 
+    left: calc(50% + 26px); 
+    transition: opacity 0.3s;
+  }
+
+  /* 電腦版積木：注音與聲調 23px */
+  .greet-bopomofo { 
+    display: flex; 
+    flex-direction: column; 
+    font-size: 23px; 
+    line-height: 1.05; 
+    color: #555; 
+    font-weight: bold; 
+  }
+
+  .greet-tone { 
+    position: absolute; 
+    left: 100%; 
+    top: 30%; 
+    font-size: 23px; 
+    margin-left: 2px; 
+    color: #555; 
+    font-weight: bold; 
+  }
+
+  /* 輕聲完美下探 10% */
+  .greet-tone.light-tone { 
+    position: relative; 
+    left: auto; 
+    top: auto; 
+    margin-left: 0; 
+    margin-bottom: -3px; 
+    transform: translateY(10%); 
+    line-height: 0.8; 
+  }
+
+  /* 電腦版積木：拼音 27px，純黑，上抬防沾黏 */
+  .greet-py { 
+    font-size: 27px; 
+    font-weight: bold; 
+    color: #000; 
+    margin-top: 8px; 
+    transform: translateY(-10%); 
+    transition: opacity 0.3s;
+  }
+
+  .hide-pinyin .greet-py { opacity: 0 !important; } 
+  .hide-zhuyin .greet-zhuyin-box { opacity: 0 !important; }
+
+  /* =======================================================================
+     🎯 電腦版：歡迎詞專屬縮小一號設定
+     ======================================================================= */
+  .start-card .greet-hz { font-size: 55px; margin-right: 24px; }
+  .start-card .greet-zhuyin-box { left: calc(50% + 24px); }
+  .start-card .greet-bopomofo, .start-card .greet-tone { font-size: 20px; }
+  .start-card .greet-py { font-size: 24px; }
+
+  /* 響應式手機版結束視窗與結算星星動畫 */
+  .win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10001; animation: fade-in-up 0.5s ease-out forwards; padding: 20px; box-sizing: border-box; }
+  .win-content { text-align: center; padding: 40px 20px; border-radius: 30px; background-color: white; box-shadow: 0 30px 60px rgba(0,0,0,0.15); border: 8px solid #FFFFFF; width: 100%; max-width: 450px; box-sizing: border-box; }
+  .win-content h1 { color: #4CAF50; font-size: 45px; margin: 0 0 10px 0; }
+  .win-content p { font-size: 20px; color: #666; margin-bottom: 20px; }
+  
+  .final-stars { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; min-height: 50px; }
+  .final-star-item { font-size: 45px; opacity: 0; transform: scale(0) translateY(20px); animation: pop-star 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; filter: drop-shadow(0 4px 8px rgba(255, 202, 40, 0.6)); }
+  @keyframes pop-star { to { opacity: 1; transform: scale(1) translateY(0); } }
+  .final-star-text { font-size: 26px; color: #ff9800; margin: 0 0 25px 0; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+  #restartBtn { background-color: #4CAF50; color: white; font-size: 24px; font-weight: bold; padding: 15px 30px; border: none; border-radius: 20px; cursor: pointer; box-shadow: 0 8px 0 #388E3C; transition: all 0.2s; white-space: normal; width: 100%; box-sizing: border-box; }
+  #restartBtn:active { transform: translateY(8px); box-shadow: 0 0 0 #388E3C; }
+  .footer-brand { margin-top: 30px; font-size: 14px; color: #aaa; font-weight: bold; text-align: center; }
+
+  /* ================= 老師介面 CSS ================= */
+  #teacherPanel { background-color: rgba(255, 255, 255, 0.95); padding: 40px 50px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.08); width: 85%; max-width: 900px; display: none; flex-direction: column; gap: 25px; margin-top: 20px; border: 3px solid #fff; box-sizing: border-box; }
+  
+  .brand-header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 15px; border-bottom: 2px dashed #e0e6ed; padding-bottom: 25px;}
+  .imi-logo-container { width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .imi-logo-container img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+  .brand-text h1 { font-size: 26px; color: #333; margin: 0 0 5px 0; }
+  .brand-text p { font-size: 16px; color: #4CAF50; margin: 0; font-weight: bold; }
+  .brand-text p.brand-more-info { font-size: 16px; color: #777; margin-top: 5px; font-weight: bold; }
+  .brand-text p.brand-more-info a { color: #2196F3; text-decoration: none; }
+  .brand-text p.brand-more-info a:hover { text-decoration: underline; }
+  
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .input-box { display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box; }
+  .input-box label { font-size: 16px; font-weight: bold; color: #555; margin-left: 5px;}
+  .input-box input { width: 100%; padding: 12px 18px; font-size: 18px; border: 2px solid #e0e6ed; border-radius: 15px; background: #fcfdfe; transition: all 0.3s; color: #444; outline: none; box-sizing: border-box; }
+  .input-box input:focus { border-color: #A7C7E7; box-shadow: 0 0 0 4px rgba(167, 199, 231, 0.2); }
+  textarea { width: 100%; height: 200px; font-size: 18px; padding: 18px; border: 2px solid #e0e6ed; border-radius: 20px; resize: vertical; box-sizing: border-box; background-color: #fcfdfe; outline: none; transition: all 0.3s; }
+  
+  .start-btn { background-color: #4CAF50; color: white; font-size: 22px; font-weight: bold; padding: 18px 40px; border: none; border-radius: 20px; cursor: pointer; box-shadow: 0 8px 0 #388E3C; transition: all 0.2s; align-self: center; margin-top: 10px; width: auto; max-width: 100%; white-space: normal; }
+  
+  #linkResult { display: none; margin-top: 15px; padding: 20px; background: #e8f5e9; border: 2px dashed #4CAF50; border-radius: 15px; text-align: center; }
+  #linkResult input { width: 90%; padding: 10px; font-size: 16px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box;}
+  .copy-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: bold;}
+  .clear-btn { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; padding: 6px 15px; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s; margin-bottom: 8px; }
+  .clear-btn:hover { background: #ffcdd2; transform: scale(0.95); }
+
+  /* 開場動畫覆蓋層 */
+  .start-overlay { 
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(255, 255, 255, 0.5); z-index: 200; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    border-radius: 30px; backdrop-filter: blur(6px); transition: opacity 0.5s; 
+  }
+  
+  .start-card {
+    background: #fff; padding: 40px 60px; border-radius: 40px; 
+    border: 6px solid #FFD54F; box-shadow: 0 15px 0 #FFC107, 0 25px 40px rgba(0,0,0,0.2); 
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    animation: fade-in-up 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    margin-top: -30px;
+    max-width: 95%; box-sizing: border-box;
+  }
+
+  .start-greeting { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .greeting-en { font-size: 32px; color: #777; font-weight: bold; letter-spacing: 1px; }
+  .greeting-zh-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; align-items: flex-end; }
+
+  .start-countdown { display: none; }
+  .film-countdown { 
+    position: relative; width: 180px; height: 180px; border: 10px solid #333; border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center; background: transparent; 
+    overflow: hidden; opacity: 0; box-shadow: 0 8px 25px rgba(0,0,0,0.15); 
+  }
+  .film-countdown::before { content: ""; position: absolute; width: 100%; height: 4px; background: #333; top: 50%; left: 0; transform: translateY(-50%); z-index: 1; }
+  .film-countdown::after { content: ""; position: absolute; width: 4px; height: 100%; background: #333; left: 50%; top: 0; transform: translateX(-50%); z-index: 1; }
+  .film-number { position: relative; z-index: 10; font-size: 110px; font-weight: bold; color: #333; background: rgba(255,255,255,0.95); padding: 0 25px; border-radius: 50%; line-height: 1; }
+  
+  .play-count { animation: count-anim 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+  @keyframes count-anim { 
+    0% { transform: scale(2); opacity: 0; } 
+    20% { transform: scale(1); opacity: 1; } 
+    80% { transform: scale(1); opacity: 1; } 
+    100% { transform: scale(0.5); opacity: 0; } 
+  }
+
+  /* ================= 手機版優化區塊 ================= */
+  @media (max-width: 768px) {
+    #teacherPanel { padding: 25px 15px; width: 95%; }
+    .brand-header { flex-direction: column; text-align: center; gap: 10px; }
+    
+    .imi-logo-container { width: 130px; height: 130px; margin: 0 auto; display: block; overflow: visible; flex-shrink: 0; } 
+    .imi-logo-container img { object-fit: contain; width: 100%; height: 100%; display: block; }
+    
+    .brand-text h1 { font-size: 20px; line-height: 1.3; } 
+    .brand-text p { font-size: 14px; }
+    .brand-text p.brand-more-info { font-size: 14px; }
+    
+    .input-grid { grid-template-columns: 1fr; gap: 15px; } 
+    .input-box { width: 100%; padding: 0; margin: 0; box-sizing: border-box; }
+    .input-box input, .input-box input[type="date"], textarea { width: 100%; max-width: 100%; box-sizing: border-box; margin: 0; padding: 12px 15px; display: block; font-size: 16px; -webkit-appearance: none; }
+    .start-btn { width: 100%; font-size: 20px; padding: 15px 20px; }
+    
+    .system-toast { width: 80%; max-width: 320px; padding: 12px 20px; font-size: 17px; border-radius: 25px; transform: translate(-50%, -50%) scale(0.9); }
+    .system-toast.show { transform: translate(-50%, -50%) scale(1); }
+    
+    .win-content { padding: 25px 15px; border-width: 5px; max-width: 90%; }
+    .win-content h1 { font-size: 30px; margin-bottom: 5px; }
+    .win-content p { font-size: 15px; margin-bottom: 10px; }
+    .final-stars { gap: 5px; }
+    .final-star-item { font-size: 35px; }
+    .final-star-text { font-size: 22px; margin: 0 0 20px 0;}
+    #restartBtn { font-size: 18px; padding: 12px 20px; border-radius: 15px; }
+    
+    .star-bg { font-size: 180px; }
+
+    .student-header { width: 850px; max-width: 850px; flex-shrink: 0; box-sizing: border-box; padding: 25px 30px; display: flex; flex-direction: column; align-items: center; margin: 0 0 20px 0; }
+    .course-title { font-size: 50px; margin-bottom: 20px; line-height: 1.2; text-align: center; white-space: normal; }
+    
+    .course-info { display: flex; flex-wrap: nowrap; gap: 15px; justify-content: center; width: 100%; }
+    .info-tag { font-size: 28px; padding: 10px 25px; white-space: nowrap; }
+
+    .top-bar { display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 850px; max-width: 850px; flex-shrink: 0; margin-bottom: 30px; height: auto; padding: 0; }
+    
+    .scaffold-controls { display: flex; justify-content: flex-start; width: auto; flex-wrap: nowrap; }
+    .toggle-btn { font-size: 30px; padding: 15px 35px; border-radius: 30px; white-space: nowrap; flex-shrink: 0; }
+
+    .star-status-group { display: flex; justify-content: flex-end; width: auto; flex-wrap: nowrap; gap: 20px; align-items: center; }
+    .star-panel { padding: 15px 35px; border-radius: 40px; white-space: nowrap; flex-shrink: 0; }
+    .star-icon { font-size: 54px; }
+    .star-count { font-size: 48px; }
+    
+    .finger-guide { width: 45px; height: 45px; bottom: -45px; left: 40%; margin-left: 0; }
+
+    /* =========================================
+       💡 手機版：積木區維持大尺寸 (50px)
+       ========================================= */
+    .greet-hz { font-size: 50px; margin-right: 24px; }
+    .greet-zhuyin-box { left: calc(50% + 24px); }
+    .greet-bopomofo { font-size: 22px; }
+    .greet-tone { font-size: 22px; }
+    .greet-py { font-size: 23px; }
+
+    /* =========================================
+       🎯 手機版：歡迎詞專屬縮小與絕對防沾黏設定
+       ========================================= */
+    .start-card { padding: 25px 10px; border-radius: 35px; box-shadow: 0 10px 0 #FFC107, 0 15px 30px rgba(0,0,0,0.2); margin-top: -20px; width: 95%; max-width: 100%;}
+    .greeting-en { font-size: 26px; margin-bottom: 5px; }
+
+    .greeting-zh-container {
+        display: flex;
+        flex-wrap: nowrap !important;
+        width: 100%;
+        justify-content: center; 
+        gap: 2px; 
+    }
+    
+    /* 🎯 推開下一個字塊，防沾黏的絕對防護罩 */
+    .greeting-zh-container .greet-char-block {
+        margin: 0 10px; 
+    }
+
+    /* 手機版歡迎詞字體縮小一號 (45px) */
+    .greeting-zh-container .greet-hz { font-size: 45px; margin-right: 18px; }
+    .greeting-zh-container .greet-zhuyin-box { left: calc(50% + 18px); }
+    .greeting-zh-container .greet-bopomofo,
+    .greeting-zh-container .greet-tone { font-size: 16px; }
+    .greeting-zh-container .greet-py { font-size: 20px; }
+
+    .film-countdown { width: 150px; height: 150px; border-width: 8px; }
+    .film-countdown::before, .film-countdown::after { height: 3px; width: 3px; }
+    .film-number { font-size: 90px; padding: 0 15px; }
+  }
+</style>
+</head>
+
+<body id="gameBody">
+
+  <div id="teacherPanel">
+    <div class="brand-header">
+      <div class="imi-logo-container">
+        <img src="https://lh3.googleusercontent.com/d/1pVzgjMeFRcr6FKrx1DVhElykenr7ta0o" alt="IMI Logo">
+      </div>
+      <div class="brand-text">
+        <h1>IMI - Inkheart Mandarin Immersion Teacher Studio</h1>
+        <p>✨ Made by IMI Teacher Evelyn</p>
+        <p class="brand-more-info">更多資訊 - <a href="https://imiteacherevelyn.wixsite.com/mandarin-hub" target="_blank">IMI華語教學網站</a></p>
+      </div>
+    </div>
+    <div class="input-grid">
+      <div class="input-box"><label>📚 教材名稱</label><input type="text" id="inputMaterialName" value="IMI_詞彙消消樂"></div>
+      <div class="input-box"><label>👩‍🏫 老師姓名</label><input type="text" id="inputTeacherName" value="Evelyn 老師"></div>
+      <div class="input-box"><label>🎓 學生 / 班級</label><input type="text" id="inputClassName" value=""></div>
+      <div class="input-box"><label>📅 日期</label><input type="date" id="inputDate"></div>
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+      <label style="font-size: 16px; font-weight: bold; color: #555; margin-left: 5px; margin-bottom: 8px;">📥 匯入單字資料</label>
+      <button class="clear-btn" onclick="clearVocab()">🗑️ 清除資料</button>
+    </div>
+    <textarea id="vocabInput" placeholder="請在此貼上 專屬Gem 的Json資料..."></textarea>
+    
+    <button class="start-btn" onclick="generateLink()">🔗 生成學生專屬連結</button>
+    <div id="linkResult">
+      <p style="margin: 0 0 10px 0; font-weight: bold; color: #2e7d32;">✅ 連結已生成！請點擊複製</p>
+      <input type="text" id="generatedUrl" readonly><br>
+      <button class="copy-btn" onclick="copyUrl()">📋 複製學生連結</button>
+    </div>
+  </div>
+
+
+  <div id="winModal" class="win-overlay" style="display: none;">
+    <div class="win-content">
+      <h1>🎉 🎉 🎉 太棒了！</h1>
+      <p>你學會了！</p>
+      <div id="finalStarsContainer" class="final-stars"></div>
+      <div id="finalStarText" class="final-star-text"></div>
+      <button id="restartBtn" onclick="restartGame()">再玩一次 Let's Play again</button>
+    </div>
+  </div>
+  
+  <div id="bigStarFeedback">
+    <div class="star-bg">⭐</div>
+    <div class="star-text-box" id="bigStarText"></div>
+  </div>
+
+  <div id="systemToast" class="system-toast"></div>
+
+  <div id="gameContainer">
+    <div class="student-header">
+      <h1 class="course-title" id="displayMaterialName">IMI_詞彙消消樂</h1>
+      <div class="course-info" id="displayInfoTags"></div>
+    </div>
+    <div class="top-bar">
+      <div class="scaffold-controls"><button class="toggle-btn" id="btnPy" onclick="togglePinyin()">👁️ 拼音 Pinyin</button><button class="toggle-btn" id="btnZy" onclick="toggleZhuyin()">👁️ 注音ㄅㄆㄇ</button></div>
+      <div class="star-status-group">
+        <div class="star-panel" id="starBtn" onclick="useStar()">
+            <svg class="finger-guide" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <path d="M70,45 C70,42 68,40 65,40 C64,40 63,41 62,42 C61,39 59,37 56,37 C54,37 52,38 51,40 C50,38 48,36 45,36 C42,36 40,38 40,41 L40,25 C40,20 36,16 31,16 C26,16 22,20 22,25 L22,60 C22,63 19,65 17,65 C14,65 12,67 12,70 C12,77 18,84 25,84 L60,84 C65,84 70,79 70,74 L70,45 Z" fill="#FFCA28" stroke="#555" stroke-width="3" stroke-linejoin="round" />
+            </svg>
+            <span class="star-icon">⭐</span>
+            <span class="star-count" id="starCount">0</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="marquee-box">
+       <div class="marquee-inner" id="marqueeInner"></div>
+    </div>
+    
+    <div id="boardWrapper">
+      <div id="stackedBoard"></div>
+    </div>
+    <div class="footer-brand">Made by IMI Teacher Studio</div>
+  </div>
+
+
+<script>
+  const SCRIPT_URL = "<?!= scriptUrl ?>";
+  const URL_DATA = "<?!= urlData ?>";
+  let originalVocabString = ""; 
+  
+  window.onload = function() {
+    document.getElementById('inputDate').valueAsDate = new Date();
+    if (URL_DATA) {
+      document.getElementById('teacherPanel').style.display = 'none';
+      document.getElementById('gameContainer').style.display = 'flex'; 
+      try {
+        const decodedString = decodeURIComponent(escape(atob(URL_DATA)));
+        const dataObj = JSON.parse(decodedString);
+        document.getElementById('displayMaterialName').innerText = dataObj.mName;
+        
+        let tagsHtml = `<span class="info-tag">👨‍🏫 ${dataObj.tName}</span>`;
+        if (dataObj.cName) tagsHtml += `<span class="info-tag">🎓 ${dataObj.cName}</span>`;
+        if (dataObj.dStr) {
+          let dParts = dataObj.dStr.split('-');
+          if(dParts.length === 3) {
+             tagsHtml += `<span class="info-tag">🗓️ ${dParts[0]}年${dParts[1]}月${dParts[2]}號</span>`;
+          } else {
+             tagsHtml += `<span class="info-tag">🗓️ ${dataObj.dStr}</span>`;
+          }
+        }
+        
+        document.getElementById('displayInfoTags').innerHTML = tagsHtml;
+        document.title = `${dataObj.mName} - IMI 詞彙消消樂`;
+        parseAndStart(dataObj.vText);
+      } catch(e) {
+        console.error(e); 
+        alert("資料讀取失敗，請確認這是不是完整的學生網址喔！");
+        document.getElementById('teacherPanel').style.display = 'flex'; 
+        document.getElementById('gameContainer').style.display = 'none';
+      }
+    } else {
+      document.getElementById('teacherPanel').style.display = 'flex';
+      document.getElementById('gameContainer').style.display = 'none';
+    }
+  };
+
+  function clearVocab() { 
+    document.getElementById('vocabInput').value = ''; 
+    document.getElementById('linkResult').style.display = 'none';
+    document.getElementById('generatedUrl').value = '';
+  }
+
+  function generateLink() {
+    const vText = document.getElementById('vocabInput').value;
+    if (!vText.trim()) { alert("(請貼上 專屬Gem 生成的Json資料喔！)"); return; }
+    const gameData = { mName: document.getElementById('inputMaterialName').value || 'IMI_詞彙消消樂', tName: document.getElementById('inputTeacherName').value || 'Evelyn 老師', cName: document.getElementById('inputClassName').value || '', dStr: document.getElementById('inputDate').value || '', vText: vText };
+    const jsonString = JSON.stringify(gameData);
+    const safeBase64 = btoa(unescape(encodeURIComponent(jsonString)));
+    const finalUrl = SCRIPT_URL + "?data=" + encodeURIComponent(safeBase64);
+    document.getElementById('generatedUrl').value = finalUrl;
+    document.getElementById('linkResult').style.display = 'block';
+  }
+
+  function copyUrl() {
+    const copyText = document.getElementById('generatedUrl');
+    copyText.select(); copyText.setSelectionRange(0, 99999); 
+    document.execCommand("copy"); alert("學生專屬連結已複製！");
+  }
+
+  function playAudio(text) {
+    if ('speechSynthesis' in window) {
+      let msg = new SpeechSynthesisUtterance();
+      msg.text = text;
+      msg.lang = 'zh-TW';
+      msg.rate = 0.85; 
+      window.speechSynthesis.speak(msg);
+    }
+  }
+
+  function buildGreeting() {
+    const hr = new Date().getHours();
+    let timeData = [];
+    
+    if (hr >= 4 && hr < 12) {
+      timeData = [ {hz:'早', py:'zǎo', zy:['ㄗ','ㄠ'], tone:'ˇ'}, {hz:'安', py:'ān', zy:['ㄢ'], tone:''} ];
+    } else if (hr >= 12 && hr < 18) {
+      timeData = [ {hz:'午', py:'wǔ', zy:['ㄨ'], tone:'ˇ'}, {hz:'安', py:'ān', zy:['ㄢ'], tone:''} ];
+    } else {
+      timeData = [ {hz:'晚', py:'wǎn', zy:['ㄨ','ㄢ'], tone:'ˇ'}, {hz:'安', py:'ān', zy:['ㄢ'], tone:''} ];
+    }
+    
+    const readyData = [
+      {hz:'，', py:'', zy:[], tone:''},
+      {hz:'準', py:'zhǔn', zy:['ㄓ','ㄨ','ㄣ'], tone:'ˇ'},
+      {hz:'備', py:'bèi', zy:['ㄅ','ㄟ'], tone:'ˋ'},
+      {hz:'好', py:'hǎo', zy:['ㄏ','ㄠ'], tone:'ˇ'},
+      {hz:'了', py:'le', zy:['ㄌ','ㄜ'], tone:'˙'},
+      {hz:'嗎', py:'ma', zy:['ㄇ','ㄚ'], tone:'˙'},
+      {hz:'？', py:'', zy:[], tone:''}
+    ];
+    
+    const fullData = timeData.concat(readyData);
+    let html = '';
+    
+    for(let item of fullData) {
+      let zyHtml = item.zy.map(z => `<span>${z}</span>`).join('');
+      if (item.hz === '，' || item.hz === '？') {
+        html += `<div class="greet-char-block"><div class="greet-hanzi-box"><span class="greet-hz" style="margin-right:0;">${item.hz}</span></div></div>`;
+      } else {
+        let toneHtml = item.tone === '˙' ? `<div class="greet-tone light-tone">${item.tone}</div>` : `<div class="greet-tone">${item.tone}</div>`;
+        html += `
+        <div class="greet-char-block">
+            <div class="greet-py">${item.py}</div>
+            <div class="greet-hanzi-box">
+                <div class="greet-hz">${item.hz}</div>
+                <div class="greet-zhuyin-box">
+                    ${item.tone === '˙' ? toneHtml : ''}
+                    <div class="greet-bopomofo">${zyHtml}</div>
+                    ${item.tone !== '˙' ? toneHtml : ''}
+                </div>
+            </div>
+        </div>`;
+      }
+    }
+    document.getElementById('greetingZhContainer').innerHTML = html;
+  }
+
+  function runStartSequence() {
+    const wrapper = document.getElementById('boardWrapper');
+    if (!document.getElementById('startOverlay')) {
+      wrapper.insertAdjacentHTML('beforeend', `
+        <div id="startOverlay" class="start-overlay" style="display: none;">
+          <div class="start-card">
+            <div id="startGreeting" class="start-greeting">
+              <div class="greeting-en">Are you ready?</div>
+              <div class="greeting-zh-container" id="greetingZhContainer"></div>
+            </div>
+            <div id="startCountdown" class="start-countdown">
+              <div class="film-countdown" id="filmCircle"><span class="film-number" id="countdownNumber">3</span></div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    const overlay = document.getElementById('startOverlay');
+    const greetingDiv = document.getElementById('startGreeting');
+    const countdownDiv = document.getElementById('startCountdown');
+    const filmCircle = document.getElementById('filmCircle');
+    const countNum = document.getElementById('countdownNumber');
+    
+    overlay.style.display = 'flex';
+    overlay.style.opacity = 1;
+    greetingDiv.style.display = 'flex';
+    countdownDiv.style.display = 'none';
+    buildGreeting();
+    
+    setTimeout(() => {
+      greetingDiv.style.display = 'none';
+      countdownDiv.style.display = 'flex';
+      
+      let count = 3;
+      countNum.innerText = count;
+      filmCircle.classList.add('play-count');
+      
+      let countInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          filmCircle.classList.remove('play-count');
+          void filmCircle.offsetWidth; 
+          countNum.innerText = count;
+          filmCircle.classList.add('play-count');
+        } else {
+          clearInterval(countInterval);
+          overlay.style.opacity = 0;
+          setTimeout(() => {
+            overlay.style.display = 'none';
+            resetIdleTimer();
+            if (SLOTS.some(s => s.tileData !== null)) executeHint(true);
+          }, 500);
+        }
+      }, 1000);
+    }, 4000); 
+  }
+
+  let validWords = []; let remainingWords = []; let tileQueue = []; let SLOTS = []; let currentSelection = []; 
+  let stars = 0; let idleTimer = null; let toastTimer = null; 
+  let isShuffling = false; 
+  let hintUsedThisTurn = false; // 🎯 防弊機制：這回合是否用過提示
+  const HEX_W = 170; const HEX_H = 196; const GAP = 5;
+  let pinyinVisible = true; let zhuyinVisible = true;
+  
+  function togglePinyin() { pinyinVisible = !pinyinVisible; const btn = document.getElementById('btnPy'); if(pinyinVisible) { document.body.classList.remove('hide-pinyin'); btn.classList.remove('off'); btn.innerText = "👁️ 拼音 Pinyin"; } else { document.body.classList.add('hide-pinyin'); btn.classList.add('off'); btn.innerText = "🙈 拼音 Pinyin"; } }
+  function toggleZhuyin() { zhuyinVisible = !zhuyinVisible; const btn = document.getElementById('btnZy'); if(zhuyinVisible) { document.body.classList.remove('hide-zhuyin'); btn.classList.remove('off'); btn.innerText = "👁️ 注音ㄅㄆㄇ"; } else { document.body.classList.add('hide-zhuyin'); btn.classList.add('off'); btn.innerText = "🙈 注音ㄅㄆㄇ"; } }
+  function initSlots() { SLOTS = []; const layout = [3, 4, 3]; for (let row = 0; row < layout.length; row++) { let cols = layout[row]; let offsetX = (cols === 3) ? ((HEX_W + GAP) / 2) : 0; for (let col = 0; col < cols; col++) { const x = col * (HEX_W + GAP) + offsetX + 20; const y = row * (HEX_H * 0.75 + GAP) + 20; SLOTS.push({ id: `R${row}C${col}`, x, y, tileData: null, el: null }); } } }
+  
+  function parseAndStart(rawString) {
+    originalVocabString = rawString;
+    const lines = rawString.split('\n'); let tempMap = {}; tileQueue = []; let hasPy = false; let hasZy = false;
+    for (let line of lines) {
+      if (line.trim() === '' || line.includes('```')) continue; 
+      let parts = line.split(','); if (parts.length < 3) continue; 
+      const wordId = parts[0].trim(); const toneCode = parts[1].trim(); const zh = parts[2].trim();
+      const py = parts[3] ? parts[3].trim() : ""; const zy = parts[4] ? parts[4].trim().split('') : [];
+      const tone = parts[5] ? parts[5].trim() : ""; const nativeTranslation = parts[6] ? parts[6].trim() : "";
+      if (py) hasPy = true; if (zy.length > 0) hasZy = true;
+      if (!tempMap[wordId]) tempMap[wordId] = { fullStr: '', native: nativeTranslation, tiles: [] };
+      let tData = { wordId, toneCode, zh, py, zy, tone, native: tempMap[wordId].native };
+      tempMap[wordId].fullStr += zh; 
+      tempMap[wordId].tiles.push(tData);
+      tileQueue.push(tData);
+    }
+    document.getElementById('btnPy').style.display = hasPy ? 'flex' : 'none'; document.getElementById('btnZy').style.display = hasZy ? 'flex' : 'none';
+    validWords = Object.values(tempMap).map(w => ({ str: w.fullStr, native: w.native, tiles: w.tiles })); 
+    
+    initGame(); 
+  }
+
+  function getPlayableShuffle(tiles) {
+    if (tiles.length <= 1) return tiles; 
+
+    let poolWords = [...remainingWords].sort(() => Math.random() - 0.5);
+    let selectedWords = [];
+    let currentTileCount = 0;
+
+    for (let w of poolWords) {
+      if (currentTileCount + w.str.length <= 10) {
+        selectedWords.push(w);
+        currentTileCount += w.str.length;
+      }
+      if (selectedWords.length === 3) break; 
+    }
+
+    if (selectedWords.length === 0) return tiles.sort(() => Math.random() - 0.5);
+
+    let remainingTiles = [...tiles];
+    let guaranteedTiles = [];
+
+    for (let word of selectedWords) {
+      for (let char of word.str) {
+        let idx = remainingTiles.findIndex(t => t.zh === char);
+        if (idx !== -1) {
+          guaranteedTiles.push(remainingTiles.splice(idx, 1)[0]);
+        }
+      }
+    }
+
+    remainingTiles.sort(() => Math.random() - 0.5);
+    while (guaranteedTiles.length < 10 && remainingTiles.length > 0) {
+      guaranteedTiles.push(remainingTiles.shift());
+    }
+
+    guaranteedTiles.sort(() => Math.random() - 0.5);
+
+    return [...guaranteedTiles, ...remainingTiles];
+  }
+
+  function initGame() { 
+    initSlots(); 
+    remainingWords = [...validWords];
+    tileQueue = getPlayableShuffle(tileQueue);
+    currentSelection = []; stars = 0; updateStarUI(); 
+    isShuffling = false; 
+    hintUsedThisTurn = false; // 初始化重置
+    
+    document.getElementById('stackedBoard').innerHTML = ""; 
+    refillBoard(); 
+    window.removeEventListener('resize', adjustScale); window.addEventListener('resize', adjustScale); adjustScale(); 
+    updateMarquee(); 
+    
+    clearTimeout(idleTimer); 
+    runStartSequence(); 
+  }
+
+  function adjustScale() { const container = document.getElementById('gameContainer'); const screenWidth = window.innerWidth; if (screenWidth < 900) { const scaleRatio = screenWidth / 900; container.style.transform = `scale(${scaleRatio})`; container.style.transformOrigin = 'top center'; document.body.style.minHeight = `${container.getBoundingClientRect().height + 40}px`; } else { container.style.transform = 'none'; document.body.style.minHeight = '100vh'; } }
+  
+  function updateMarquee() {
+    const box = document.getElementById('marqueeInner');
+    if (remainingWords.length === 0) { box.innerHTML = ""; return; }
+    
+    let htmlStr = remainingWords.map(w => `<span class="marquee-item">${w.str}<span>(${w.native})</span></span>`).join('✨');
+    let repeatCount = Math.max(1, Math.ceil(12 / remainingWords.length));
+    let blockStr = new Array(repeatCount).fill(htmlStr).join('✨');
+    box.innerHTML = blockStr + '✨' + blockStr;
+    
+    setTimeout(() => {
+      const distance = box.scrollWidth / 2;
+      const speed = 50; 
+      const duration = distance / speed;
+      box.style.animation = 'none';
+      void box.offsetWidth; 
+      box.style.animation = `marquee-anim ${duration}s linear infinite`;
+    }, 50);
+  }
+
+  function showToast(text, isError = false, duration = 2500) {
+    if (isShuffling && text.indexOf("重新洗牌") === -1) return;
+    const toast = document.getElementById('systemToast');
+    clearTimeout(toastTimer);
+    toast.innerText = text;
+    if (isError) toast.classList.add('error'); else toast.classList.remove('error');
+    toast.classList.add('show');
+    toastTimer = setTimeout(() => { toast.classList.remove('show'); }, duration);
+  }
+
+  function showBigStar(matchObj) {
+    const starContainer = document.getElementById('bigStarFeedback');
+    const textBox = document.getElementById('bigStarText');
+    let htmlContent = `<div class="star-text-zh">${matchObj.str}</div>`;
+    if (matchObj.native) { htmlContent += `<div class="star-text-en">${matchObj.native}</div>`; }
+    textBox.innerHTML = htmlContent;
+    starContainer.classList.add('show');
+    
+    playAudio(matchObj.str);
+    
+    setTimeout(() => { starContainer.classList.remove('show'); }, 1200);
+  }
+
+  function refillBoard() { let emptySlots = SLOTS.filter(s => s.tileData === null).sort(() => Math.random() - 0.5); while (tileQueue.length > 0 && emptySlots.length > 0) { let nextTile = tileQueue.shift(); let slot = emptySlots.pop(); slot.tileData = nextTile; renderTileInSlot(slot); } setTimeout(checkDeadlock, 700); }
+  
+  function renderTileInSlot(slot) { 
+    let item = slot.tileData; 
+    let zyHtml = item.zy.length > 0 ? item.zy.map(z => `<span>${z}</span>`).join('') : ""; 
+    
+    let toneHtml = "";
+    if (item.tone) {
+      if (item.tone === '˙') {
+        toneHtml = `<div class="greet-tone light-tone">${item.tone}</div>`;
+      } else {
+        toneHtml = `<div class="greet-tone">${item.tone}</div>`;
+      }
+    }
+    
+    const wrapper = document.createElement('div'); 
+    wrapper.className = `tile-wrapper tone-${item.toneCode}-wrap fade-in`; 
+    wrapper.style.left = `${slot.x}px`; wrapper.style.top = `${slot.y}px`; 
+    
+    const tile = document.createElement('div'); 
+    tile.className = `tile tone-${item.toneCode}`; 
+    
+    tile.innerHTML = `
+      <div class="greet-char-block">
+        <div class="greet-py">${item.py}</div>
+        <div class="greet-hanzi-box">
+          <div class="greet-hz">${item.zh}</div>
+          <div class="greet-zhuyin-box">
+            ${item.tone === '˙' ? toneHtml : ''}
+            <div class="greet-bopomofo">${zyHtml}</div>
+            ${item.tone !== '˙' ? toneHtml : ''}
+          </div>
+        </div>
+      </div>
+    `; 
+    
+    wrapper.appendChild(tile); 
+    wrapper.addEventListener('click', () => handleTileClick(slot, wrapper)); 
+    slot.el = wrapper; 
+    document.getElementById('stackedBoard').appendChild(wrapper); 
+    setTimeout(() => wrapper.classList.remove('fade-in'), 600); 
+  }
+  
+  function handleTileClick(slot, wrapper) { 
+    resetIdleTimer(); 
+
+    if (wrapper.classList.contains('matched')) return; 
+
+    if (wrapper.classList.contains('selected')) {
+      if (currentSelection.length > 0 && currentSelection[currentSelection.length - 1].el === wrapper) {
+        wrapper.classList.remove('selected'); 
+        currentSelection.pop();               
+      }
+      return; 
+    }
+    
+    wrapper.classList.add('selected'); 
+    currentSelection.push({ slot, el: wrapper, tileData: slot.tileData }); 
+    let currentStr = currentSelection.map(s => s.tileData.zh).join(''); 
+    
+    let match = remainingWords.find(w => w.str === currentStr); 
+    if (match) { 
+      successSelection(match); 
+    } else if (!remainingWords.some(w => w.str.startsWith(currentStr))) { 
+      failSelection(); 
+    } 
+  }
+  
+  function successSelection(matchObj) { 
+    showBigStar(matchObj); 
+    
+    // 清除發光提示
+    document.querySelectorAll('.hint-glow').forEach(el => el.classList.remove('hint-glow'));
+
+    let matchIdx = remainingWords.findIndex(w => w.str === matchObj.str);
+    if (matchIdx !== -1) remainingWords.splice(matchIdx, 1);
+    updateMarquee();
+    
+    currentSelection.forEach(item => { item.el.classList.replace('selected', 'matched'); item.slot.tileData = null; item.slot.el = null; setTimeout(() => { if(item.el && item.el.parentNode) item.el.remove(); }, 600); }); 
+    currentSelection = []; 
+    
+    // 🎯 星星獎勵邏輯：若沒有作弊，才給予 1 顆星！
+    if (!hintUsedThisTurn) {
+        stars++; 
+    }
+    hintUsedThisTurn = false; // 進入下一題，防弊鎖解開
+    updateStarUI(); 
+
+    setTimeout(() => { 
+        refillBoard(); 
+        checkWinCondition(); 
+        resetIdleTimer(); // 💡 補充新積木後，重新啟動計時器
+    }, 600); 
+  }
+  
+  function failSelection() { 
+    showToast("請你再找找看。\nTry again please.", true, 1200); 
+    document.querySelectorAll('.hint-glow').forEach(el => el.classList.remove('hint-glow'));
+    hintUsedThisTurn = false; // 配對失敗也解鎖，讓學生有機會靠自己拿星
+    setTimeout(() => { 
+        currentSelection.forEach(item => item.el.classList.remove('selected')); 
+        currentSelection = []; 
+        resetIdleTimer(); // 💡 失敗復原後，重新啟動計時器
+    }, 1200); 
+  }
+  
+  function checkDeadlock() { 
+    let currentTiles = SLOTS.filter(s => s.tileData !== null).map(s => s.tileData); 
+    if (currentTiles.length === 0) return; 
+    
+    let boardCanForm = false; 
+    for (let word of remainingWords) { 
+      let temp = currentTiles.map(t => t.zh); let matched = true; 
+      for (let char of word.str) { 
+        let idx = temp.indexOf(char); 
+        if (idx !== -1) temp.splice(idx, 1); else { matched = false; break; } 
+      } 
+      if (matched) { boardCanForm = true; break; } 
+    } 
+
+    if (!boardCanForm) { 
+      let allRemaining = [...tileQueue]; 
+      currentTiles.forEach(t => allRemaining.push(t));
+
+      let totalCanForm = false;
+      for (let word of remainingWords) { 
+        let temp = allRemaining.map(t => t.zh); let matched = true; 
+        for (let char of word.str) { 
+          let idx = temp.indexOf(char); 
+          if (idx !== -1) temp.splice(idx, 1); else { matched = false; break; } 
+        } 
+        if (matched) { totalCanForm = true; break; } 
+      } 
+
+      if (!totalCanForm && allRemaining.length > 0) {
+         let orphan = allRemaining[0]; 
+         let targetWordObj = remainingWords.find(w => w.str.includes(orphan.zh));
+         if (targetWordObj) {
+             let availableChars = allRemaining.map(t => t.zh);
+             for (let reqTile of targetWordObj.tiles) {
+                 let idx = availableChars.indexOf(reqTile.zh);
+                 if (idx !== -1) {
+                     availableChars.splice(idx, 1); 
+                 } else {
+                     allRemaining.push({...reqTile}); 
+                 }
+             }
+         }
+      }
+
+      isShuffling = true; 
+      clearTimeout(idleTimer); 
+      hideRescueUI(); 
+      hintUsedThisTurn = false; 
+      
+      showToast("無法配對牌卡，為您重新洗牌！\nAuto Shuffling...", false, 1500); 
+      
+      SLOTS.forEach(s => { 
+        if (s.el) { 
+          s.el.style.transition = 'all 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+          s.el.style.transform = 'scale(0) rotate(180deg)';
+          s.el.style.opacity = '0';
+          let tempEl = s.el;
+          setTimeout(() => { if (tempEl && tempEl.parentNode) tempEl.remove(); }, 1200); 
+        } 
+        s.tileData = null; 
+        s.el = null;
+      }); 
+      
+      tileQueue = getPlayableShuffle(allRemaining); 
+      
+      setTimeout(() => { 
+        refillBoard(); 
+        isShuffling = false; 
+        resetIdleTimer(); 
+      }, 1500); 
+    } 
+  }
+
+  function checkWinCondition() { 
+    if (tileQueue.length === 0 && SLOTS.every(s => s.tileData === null)) { triggerWin(); } 
+  }
+  
+  function triggerWin() { 
+    clearTimeout(idleTimer); hideRescueUI(); 
+    document.getElementById('starBtn').style.opacity = '0'; 
+    document.getElementById('btnPy').style.opacity = '0'; 
+    document.getElementById('btnZy').style.opacity = '0'; 
+    
+    const starContainer = document.getElementById('finalStarsContainer');
+    starContainer.innerHTML = '';
+    for(let i=0; i<stars; i++) {
+      const starEl = document.createElement('span');
+      starEl.className = 'final-star-item';
+      starEl.innerText = '⭐';
+      starEl.style.animationDelay = `${i * 0.15}s`;
+      starContainer.appendChild(starEl);
+    }
+    
+    document.getElementById('finalStarText').innerText = `一共有 ${stars} 顆星星！`;
+    
+    setTimeout(() => { document.getElementById('winModal').style.display = 'flex'; }, 1200); 
+  }
+  
+  function restartGame() { document.getElementById('winModal').style.display = 'none'; document.getElementById('starBtn').style.opacity = '1'; document.getElementById('btnPy').style.opacity = '1'; document.getElementById('btnZy').style.opacity = '1'; parseAndStart(originalVocabString); }
+  function updateStarUI() { document.getElementById('starCount').innerText = stars; }
+  
+  // 💡 絕對安全的計時器重置函數
+  function resetIdleTimer() { 
+    clearTimeout(idleTimer); 
+    hideRescueUI(); 
+    idleTimer = setTimeout(triggerRescue, 10000); 
+  }
+  
+  function triggerRescue() { 
+    if (SLOTS.every(s => s.tileData === null)) return; 
+    document.getElementById('starBtn').classList.add('star-ready'); 
+  }
+  
+  function hideRescueUI() { 
+    document.getElementById('starBtn').classList.remove('star-ready'); 
+  }
+  
+  function useStar() { 
+    if (stars < 1) { 
+        alert(" (不好意思，沒辦法用小星星！)"); 
+        resetIdleTimer(); // 隱藏手指，重新倒數
+        return; 
+    } 
+    // 🎯 主動點擊立刻扣 1 顆星，維持到這局結束！
+    stars--; 
+    updateStarUI(); 
+    hideRescueUI(); 
+    executeHint(false); 
+  }
+  
+  function executeHint(isFree) { 
+    document.querySelectorAll('.hint-glow').forEach(el => el.classList.remove('hint-glow')); 
+    
+    if (!isFree) {
+        hintUsedThisTurn = true; // 🎯 若非免費提示，則將此局上鎖，不給獎勵！
+    }
+    
+    if (currentSelection.length === 0) { 
+        let availableSlots = SLOTS.filter(s => s.tileData !== null); 
+        for (let word of remainingWords) { // 💡 確保留下能組成的詞彙發光
+            let tempSlots = [...availableSlots]; 
+            let foundSequence = []; 
+            let canForm = true; 
+            for (let char of word.str) { 
+                let idx = tempSlots.findIndex(s => s.tileData.zh === char); 
+                if (idx !== -1) { 
+                    foundSequence.push(tempSlots[idx]); 
+                    tempSlots.splice(idx, 1); 
+                } else { 
+                    canForm = false; break; 
+                } 
+            } 
+            if (canForm) { foundSequence.forEach(s => s.el.classList.add('hint-glow')); break; } 
+        } 
+    } else { 
+        let currentStr = currentSelection.map(s => s.tileData.zh).join(''); 
+        let nextChars = remainingWords.filter(w => w.str.startsWith(currentStr) && w.str.length > currentStr.length).map(w => w.str[currentStr.length]); 
+        let targetSlots = SLOTS.filter(s => s.tileData !== null && !currentSelection.find(cs => cs.slot === s) && nextChars.includes(s.tileData.zh)); 
+        targetSlots.forEach(s => s.el.classList.add('hint-glow')); 
+    } 
+    
+    if(!isFree) { 
+        // 💡 點完提示後，不能清除發光，僅重置閒置計時器
+        clearTimeout(idleTimer); 
+        idleTimer = setTimeout(triggerRescue, 10000); 
+    } 
+  }
+</script>
+</body>
+</html>
