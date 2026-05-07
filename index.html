@@ -995,8 +995,12 @@ body {
     
   document.getElementById('finalStarText').innerText = `一共有 ${stars} 顆星星！`;
 
-    // 💐 滿分專屬尊榮花束 (破除型別陷阱與層級遮擋)
+   // 💐 終極版：滿分專屬尊榮花束 (精準對齊時機與巨大化)
     if (Number(stars) === Number(validWords.length) && Number(validWords.length) > 0) {
+      // 1. 動態計算星星全亮的總時間 (每顆延遲 150ms, 最後加 500ms 保險)
+      const starTime = (Number(validWords.length) * 150) + 500;
+
+      // 2. 在星星全亮後才喚醒花束
       setTimeout(() => {
         const flower = document.createElement('div');
         flower.innerText = '💐';
@@ -1004,10 +1008,11 @@ body {
         flower.style.top = '50%';
         flower.style.left = '50%';
         flower.style.transform = 'translate(-50%, -50%)';
-        flower.style.fontSize = '120px';
+        // 3. 巨大化：增加字體大小 (原本 120px, 改為 240px)
+        flower.style.fontSize = '240px';
         flower.style.zIndex = '99999';
-        flower.style.pointerEvents = 'none';
-        flower.style.filter = 'drop-shadow(0 10px 15px rgba(0,0,0,0.15))';
+        flower.style.pointerEvents = 'none'; // 絕對零干擾，不阻擋點擊
+        flower.style.filter = 'drop-shadow(0 15px 25px rgba(0,0,0,0.2))';
         document.body.appendChild(flower);
 
         flower.animate([
@@ -1020,7 +1025,7 @@ body {
           duration: 2000,
           easing: 'ease-in-out'
         }).onfinish = () => flower.remove();
-      }, 1200);
+      }, starTime); // <-- 使用動態計算的時間
     }
     
     setTimeout(() => { document.getElementById('winModal').style.display = 'flex'; }, 1200); 
