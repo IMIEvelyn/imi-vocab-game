@@ -993,9 +993,9 @@ body {
       starContainer.appendChild(starEl);
     }
     
-   document.getElementById('finalStarText').innerText = `一共有 ${stars} 顆星星！`;
+  document.getElementById('finalStarText').innerText = `一共有 ${stars} 顆星星！`;
 
-    // 💐 滿分專屬尊榮花束 (終極修正版：強制數字化比對)
+    // 💐 滿分專屬尊榮花束 (破除型別陷阱與層級遮擋)
     if (Number(stars) === Number(validWords.length) && Number(validWords.length) > 0) {
       setTimeout(() => {
         const flower = document.createElement('div');
@@ -1005,7 +1005,7 @@ body {
         flower.style.left = '50%';
         flower.style.transform = 'translate(-50%, -50%)';
         flower.style.fontSize = '120px';
-        flower.style.zIndex = '9999';
+        flower.style.zIndex = '99999';
         flower.style.pointerEvents = 'none';
         flower.style.filter = 'drop-shadow(0 10px 15px rgba(0,0,0,0.15))';
         document.body.appendChild(flower);
